@@ -13,7 +13,7 @@ import numpy as np
 class ChestXRayClassifier:
     """CNN classifier for chest X-ray disease detection using transfer learning."""
     
-    def __init__(self, model_name='resnet50', num_classes=4, input_shape=(224, 224, 3)):
+    def __init__(self, model_name='resnet50', num_classes=4, input_shape=(224, 224, 3), weights='imagenet'):
         """
         Initialize the classifier.
         
@@ -21,10 +21,12 @@ class ChestXRayClassifier:
             model_name (str): Base model name ('resnet50', 'densenet121', 'efficientnetb0')
             num_classes (int): Number of disease classes
             input_shape (tuple): Input image shape
+            weights (str|None): Keras weights identifier (e.g., 'imagenet') or None to skip pretrained weights
         """
         self.model_name = model_name
         self.num_classes = num_classes
         self.input_shape = input_shape
+        self.weights = weights
         self.model = None
         self.history = None
     
@@ -43,19 +45,19 @@ class ChestXRayClassifier:
             base_model = ResNet50(
                 input_shape=self.input_shape,
                 include_top=False,
-                weights='imagenet'
+                weights=self.weights
             )
         elif self.model_name == 'densenet121':
             base_model = DenseNet121(
                 input_shape=self.input_shape,
                 include_top=False,
-                weights='imagenet'
+                weights=self.weights
             )
         elif self.model_name == 'efficientnetb0':
             base_model = EfficientNetB0(
                 input_shape=self.input_shape,
                 include_top=False,
-                weights='imagenet'
+                weights=self.weights
             )
         else:
             raise ValueError(f"Unknown model: {self.model_name}")

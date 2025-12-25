@@ -20,6 +20,19 @@ class ChestXRayPreprocessor:
         """
         self.target_size = target_size
     
+    def enhance_contrast(self, gray_image):
+        """
+        Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) for X-ray enhancement.
+        
+        Args:
+            gray_image (np.ndarray): Grayscale image
+            
+        Returns:
+            np.ndarray: Enhanced grayscale image
+        """
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        return clahe.apply(gray_image)
+    
     def normalize_image(self, image):
         """
         Normalize image to [0, 1] range.
@@ -63,6 +76,9 @@ class ChestXRayPreprocessor:
         if image is None:
             raise ValueError(f"Could not load image: {image_path}")
         
+        # Enhance contrast with CLAHE
+        image = self.enhance_contrast(image)
+        
         # Resize
         image = self.resize_image(image)
         
@@ -76,17 +92,19 @@ class ChestXRayPreprocessor:
     
     def get_train_augmentation(self):
         """
-        Get data augmentation generator for training.
+        Get data augmentation generator for training with stronger augmentation.
         
         Returns:
             ImageDataGenerator: Configured augmentation generator
         """
         return ImageDataGenerator(
-            rotation_range=15,
-            width_shift_range=0.1,
-            height_shift_range=0.1,
-            zoom_range=0.2,
+            rotation_range=25,
+            width_shift_range=0.15,
+            height_shift_range=0.15,
+            zoom_range=0.3,
+            shear_range=0.1,
             horizontal_flip=True,
+            brightness_range=[0.8, 1.2],
             fill_mode='nearest',
             rescale=1./255
         )

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chest X-Ray Classifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: radial-gradient(circle at 20% 20%, #0b172e, #08111f 40%, #050c18 70%);
+      --card: rgba(255, 255, 255, 0.04);
+      --accent: #3af2c3;
+      --accent-2: #f3ab3a;
+      --text: #e8edf7;
+      --muted: #9fb1cc;
+      --border: rgba(255, 255, 255, 0.08);
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+    .shell {
+      width: min(1100px, 100%);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .badge {
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      display: grid;
+      gap: 12px;
+    }
+    .dropzone {
+      border: 1.5px dashed var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .dropzone:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .dropzone input { display: none; }
+    .drop-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(58, 242, 195, 0.12);
+      display: grid;
+      place-items: center;
+      margin: 0 auto 12px;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 22px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      color: #051426;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 10px 35px rgba(58, 242, 195, 0.25);
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+    button:not(:disabled):hover { transform: translateY(-1px); }
+    .preview {
+      width: 100%;
+      border-radius: 12px;
+      margin-top: 12px;
+      border: 1px solid var(--border);
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 8px;
+      color: var(--text);
+    }
+    .muted { color: var(--muted); font-size: 14px; }
+    .pill {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .result-card {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+    }
+    .result-card strong { color: var(--text); font-size: 17px; }
+    .prob-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .bar {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+    .bar span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      width: 0%;
+      transition: width 0.35s ease;
+    }
+    .status { margin-top: 8px; font-size: 14px; color: var(--muted); }
+    .error { color: #ffb4b4; }
+    @media (max-width: 720px) { body { padding: 20px 12px; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <div class="title">Chest X-Ray Triage</div>
+        <div class="muted">Upload an X-ray to classify across four conditions.</div>
+      </div>
+      <div class="badge">Real-time inference · GPU optional</div>
+    </header>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="section-title">1) Upload image</div>
+        <label class="dropzone" id="dropzone">
+          <div class="drop-icon">⇪</div>
+          <div class="section-title" style="margin: 0;">Drop X-ray or click</div>
+          <div class="muted">Accepted: PNG, JPG, JPEG, BMP</div>
+          <input type="file" id="file-input" accept="image/png, image/jpeg, image/jpg, image/bmp" />
+        </label>
+        <img id="preview" class="preview" alt="Preview" style="display:none;" />
+        <button id="submit-btn" disabled>Run inference</button>
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">2) Result</div>
+        <div class="result-card" id="result-card">
+          <div class="muted">Awaiting upload...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('file-input');
+    const dropzone = document.getElementById('dropzone');
+    const preview = document.getElementById('preview');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusEl = document.getElementById('status');
+    const resultCard = document.getElementById('result-card');
+    let fileBlob = null;
+
+    const renderResult = (data) => {
+      if (!data) {
+        resultCard.innerHTML = '<div class="muted">Awaiting upload...</div>';
+        return;
+      }
+      const probs = data.probabilities || {};
+      const rows = Object.entries(probs)
+        .map(([label, value]) => {
+          const pct = Math.round(value * 1000) / 10;
+          return `
+            <div class="prob-row">
+              <span class="pill">${label}</span>
+              <div class="bar"><span style="width:${pct}%"></span></div>
+              <span>${pct.toFixed(1)}%</span>
+            </div>
+          `;
+        })
+        .join('');
+      const confidencePct = Math.round((data.confidence || 0) * 1000) / 10;
+      resultCard.innerHTML = `
+        <div class="pill" style="color: var(--text); border-color: rgba(58,242,195,0.35);">Predicted · <strong>${data.predicted_class}</strong></div>
+        <strong>Confidence: ${confidencePct.toFixed(1)}%</strong>
+        <div>${rows}</div>
+      `;
+    };
+
+    const setStatus = (msg, isError = false) => {
+      statusEl.textContent = msg;
+      statusEl.className = isError ? 'status error' : 'status';
+    };
+
+    const onFileSelected = (file) => {
+      if (!file) return;
+      fileBlob = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+      submitBtn.disabled = false;
+      renderResult(null);
+      setStatus('Ready to infer');
+    };
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = 'var(--accent)';
+    });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.style.borderColor = 'var(--border)';
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = 'var(--border)';
+      const file = e.dataTransfer.files[0];
+      onFileSelected(file);
+    });
+    fileInput.addEventListener('change', (e) => onFileSelected(e.target.files[0]));
+
+    submitBtn.addEventListener('click', async () => {
+      if (!fileBlob) return;
+      submitBtn.disabled = true;
+      setStatus('Running inference...');
+
+      const formData = new FormData();
+      formData.append('file', fileBlob);
+
+      try {
+        const res = await fetch('/predict', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error((await res.json()).detail || 'Request failed');
+        const data = await res.json();
+        renderResult(data);
+        setStatus('Inference complete');
+      } catch (err) {
+        setStatus(err.message || 'Inference failed', true);
+        renderResult(null);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

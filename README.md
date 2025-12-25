@@ -1,256 +1,148 @@
-# Chest X-Ray Disease Classification - Deep Learning Proof of Concept
+# Chest X-Ray Disease Classification
 
-## Project Overview
+Full-stack deep learning application for detecting pulmonary diseases from chest X-rays using transfer learning (ResNet50/DenseNet121/EfficientNet) + FastAPI backend + interactive web UI.
 
-This project implements a proof of concept for detecting pulmonary diseases from chest X-ray images using Convolutional Neural Networks (CNN) with transfer learning. The model classifies chest X-rays into four disease categories:
+**Disease Classes**: Healthy, Viral Pneumonia, Bacterial Pneumonia, COVID-19
 
-- **Healthy**: Normal chest X-ray
-- **Viral Pneumonia**: Pneumonia caused by viral infection
-- **Bacterial Pneumonia**: Pneumonia caused by bacterial infection
-- **COVID-19**: COVID-19 related chest abnormalities
-
-## Key Learning Objectives
-
-1. **Medical Image Classification**: Multi-class disease detection from chest X-rays
-2. **Image Preprocessing**: Normalization, resizing, and data augmentation (rotation ±15°, shift ±10%, zoom ±20%, flip)
-3. **Transfer Learning**: ResNet50, DenseNet121, or EfficientNetB0 with ImageNet pre-training
-
-## Technical Architecture
-
-### Project Structure
-
-```
-deep-learning-xrays/
-├── preprocessing.py          # Image preprocessing and augmentation
-├── model.py                  # CNN model with transfer learning
-├── train.py                  # Main training and evaluation script
-├── requirements.txt          # Python dependencies
-└── README.md                 # This file
-```
-
-### Key Components
-
-#### 1. Preprocessing Module (preprocessing.py)
-
-Handles image loading, normalization, resizing to 224×224, and data augmentation:
-- `preprocess_image()`: Complete preprocessing pipeline
-- `get_train_augmentation()`: Training-time augmentation (rotation, shift, zoom, flip)
-- `get_validation_augmentation()`: Validation-time normalization only
-
-#### 2. Model Module (model.py)
-
-Transfer learning classifier: Base Model → Global Avg Pool → Dense(512) → Dropout → Dense(256) → Dropout → Dense(4) → Softmax
-- `build_model()`: Creates frozen base + trainable head
-- `train()`: Trains with early stopping (patience=3)
-- `evaluate()`: Returns loss, accuracy, precision, recall
-
-#### 3. Training Script (train.py)
-
-End-to-end pipeline:
-1. Create synthetic dataset (50 images × 4 classes)
-2. Build transfer learning model
-3. Train with validation monitoring
-4. Evaluate with confusion matrix & ROC curves
-5. Generate visualizations and save model
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.8 or higher
-- pip or conda package manager
-- At least 4GB RAM for training
-- GPU optional but recommended (CUDA 11.8+ for NVIDIA GPUs)
-
-### Installation
-
-#### Option 1: Linux / macOS
+## Quick Start (GitHub Codespaces)
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd deep-learning-xrays
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run training
-python train.py
-```
-
-#### Option 2: Windows (PowerShell)
-
-```powershell
-# Clone the repository
-git clone <repository-url>
-cd deep-learning-xrays
-
-# Create virtual environment
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run training
-python train.py
-```
-
-#### Option 3: Windows (Command Prompt)
-
-```cmd
-# Clone the repository
-git clone <repository-url>
-cd deep-learning-xrays
-
-# Create virtual environment
-python -m venv venv
-venv\Scripts\activate.bat
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run training
-python train.py
-```
-
-#### Option 4: GitHub Codespaces
-
-```bash
-# Codespaces automatically clones the repository
-
-# Navigate to project directory
-cd deep-learning-xrays
-
-# Install system dependency for OpenCV (libGL)
+# Install system dependency for OpenCV
 sudo apt-get update && sudo apt-get install -y libgl1
 
-# Create virtual environment
+# Setup Python environment
 python -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 
-# Run training
+# Train model (synthetic data demo, ~1 min)
+python train.py
+
+# Start server
+export CLASSES="healthy,viral_pneumonia,bacterial_pneumonia,covid19"
+uvicorn server:app --host 0.0.0.0 --port 8000
+
+# Access UI: Ports tab → Open in Browser on port 8000
+```
+
+## Key Features
+
+- **CLAHE Enhancement**: Medical-grade contrast enhancement for X-ray detail extraction
+- **Class Weighting**: Prevents majority class bias (balanced predictions)
+- **X-ray Validation**: Rejects non-medical images (photos, pie charts) automatically
+- **Strong Augmentation**: Rotation ±25°, zoom ±30%, brightness ±20% for robust training
+- **Full Testing**: pytest suite for preprocessing & API validation
+
+## Project Structure
+
+```
+preprocessing.py      # CLAHE, augmentation, normalization
+model.py             # Transfer learning CNN
+train.py             # Training with class weighting
+server.py            # FastAPI + X-ray validation
+frontend/index.html  # Drag-drop upload UI
+tests/               # pytest suite
+```## Training Options
+
+### Option 1: Quick Demo (Synthetic Data)
+```bash
+python train.py  # Trains in ~1 min, generates resnet50_chest_xray_classifier.h5
+```
+**Note**: Synthetic data is weak (~25% accuracy). Use real medical datasets for production.
+
+### Option 2: Real Dataset (Production)
+```bash
+# Organize images: dataset_root/class_name/*.jpg
+export DATASET_DIR=/path/to/dataset
+export CLASSES="normal,pneumonia,covid19"
+export EPOCHS=10
 python train.py
 ```
 
-## Running the Code
+**Recommended Datasets**:
+- [ChestX-ray Pneumonia](https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia) (~6k images)
+- [COVIDx](https://github.com/lindawangg/COVID-Net) (~16k+ images)
+- [NIH Chest X-ray](https://www.nih.gov/news-events/news-releases) (112k+ images)
+
+**Training Outputs** (generated locally, in .gitignore):
+- `resnet50_chest_xray_classifier.h5` – Model weights
+- `training_history.png`, `confusion_matrix.png`, `roc_curves.png` – Visualizations
+
+---
+
+## Running the Web App
 
 ```bash
-source venv/bin/activate  # Activate virtual environment
-python train.py           # Run training pipeline
+source venv/bin/activate
+export CLASSES="healthy,viral_pneumonia,bacterial_pneumonia,covid19"
+uvicorn server:app --host 0.0.0.0 --port 8000
 ```
 
-**Output files:**
-- `resnet50_chest_xray_classifier.h5` - Trained model
-- `training_history.png` - Accuracy/loss curves
-- `confusion_matrix.png` - Confusion matrix heatmap
-- `roc_curves.png` - ROC curves for each class
+**Access UI**:
+- **Codespaces**: Ports tab → Right-click 8000 → "Open in Browser"
+- **Local**: http://localhost:8000/frontend
 
-**Training time:** ~2-5 min/epoch (CPU), ~30-60 sec/epoch (GPU)
+**Usage**: Drag-drop chest X-ray image → Click "Run inference" → View predicted disease + confidence
 
-## Customization
+---
 
-Edit `train.py` to:
-- Change model: `MODEL_NAME = 'densenet121'` (options: resnet50, densenet121, efficientnetb0)
-- Adjust training: `EPOCHS = 10`, `BATCH_SIZE = 64`, `NUM_CLASSES = 4`
-- Use real data: Replace `create_synthetic_dataset()` with your image loader
+## Testing
 
-## Key Concepts
+```bash
+pytest -v  # Runs 4 tests (preprocessing + API validation)
+```
 
-**Transfer Learning**: Pre-trained ImageNet models provide learned features, enabling faster training and better accuracy with limited medical data.
+---
 
-**Data Augmentation**: Rotation (±15°), shifting (±10%), zooming (±20%), and flipping create training variations, reducing overfitting.
+## Environment Variables
 
-**Normalization**: Scaling images to [0, 1] range stabilizes training and enables faster convergence.
+| Variable | Default | Example |
+|----------|---------|---------|
+| `DATASET_DIR` | None (uses synthetic) | `/home/user/xray_data` |
+| `CLASSES` | healthy,viral_pneumonia,bacterial_pneumonia,covid19 | `normal,pneumonia` |
+| `EPOCHS` | 3 | `10` |
+| `BATCH_SIZE` | 32 | `16` |
+| `MODEL_NAME` | resnet50 | `densenet121`, `efficientnetb0` |
+| `MODEL_PATH` | resnet50_chest_xray_classifier.h5 | `/path/to/model.h5` |
 
-**Multi-Class Classification**: Model outputs 4 probabilities (one per disease category) trained with categorical cross-entropy loss.
-
-## Performance Metrics
-
-- **Accuracy**: (TP+TN)/(TP+TN+FP+FN) - overall correctness
-- **Precision**: TP/(TP+FP) - positive prediction accuracy
-- **Recall**: TP/(TP+FN) - coverage of actual positives
-- **AUC-ROC**: 0-1 scale (1.0=perfect, 0.5=random, 0.0=worst)
+---
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| TensorFlow import error | `pip install tensorflow` |
-| CUDA out of memory | Reduce `BATCH_SIZE` in train.py |
-| Training slow | Reduce `EPOCHS`, `NUM_CLASSES`, or dataset size |
-| File not found | Ensure `cd deep-learning-xrays` |
-| Venv not activating | Use: `source venv/bin/activate` (Linux/macOS) or `.\venv\Scripts\Activate.ps1` (PowerShell) |
-| PowerShell execution error | Run: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` |
+| `libGL.so.1: cannot open` | `sudo apt-get install -y libgl1` |
+| "Not an X-ray" error | Model rejects colored/non-medical images by design |
+| Port 8000 in use | `uvicorn server:app --port 8001` |
+| Module not found | Activate venv: `source venv/bin/activate` |
+| Codespaces port forwarding | Click **Ports** tab → **Open in Browser** |
+
+---
+
+## Key Technical Concepts
+
+**Transfer Learning**: Pre-trained ImageNet models (ResNet/DenseNet/EfficientNet) provide learned features → train only classification head → faster convergence + better accuracy with limited data.
+
+**Class Weighting**: Without it, model predicts majority class 80% of the time. With `compute_class_weight('balanced')`, each disease gets equal importance → clinically useful predictions.
+
+**CLAHE**: Medical imaging standard for contrast enhancement. Adaptive histogram equalization per 8×8 tile preserves X-ray detail without oversaturation.
+
+**X-ray Validation**: Colorfulness < 18 (grayscale check) + edge density > 0.5% (anatomical features) + aspect ratio 0.4-2.5 → rejects photos/pie charts automatically.
+
+---
 
 ## Learning Outcomes
 
-✅ Medical image classification  
-✅ Image preprocessing & augmentation  
-✅ Transfer learning fundamentals  
-✅ CNN architectures (ResNet, DenseNet, EfficientNet)  
-✅ Model evaluation metrics  
-✅ Complete deep learning workflow
+✅ Medical image classification with CNNs  
+✅ Transfer learning & fine-tuning  
+✅ Class imbalance handling (weighted loss)  
+✅ CLAHE preprocessing for medical images  
+✅ FastAPI REST API development  
+✅ Frontend-backend integration  
+✅ pytest testing & validation  
 
-## Applications
+---
 
-- Clinical decision support for radiologists
-- Automated screening of large populations
-- Disease pattern research in medical imaging
-- Telemedicine and remote diagnosis
+## License
 
-## Dataset References
-
-For production implementations, use these datasets:
-
-1. **ChestX-ray Pneumonia Dataset**
-   - Source: Kaggle
-   - Size: ~6,000 images
-   - Format: JPEG
-   - Classes: Normal, Pneumonia
-
-2. **COVIDx Dataset**
-   - Source: University of Waterloo
-   - Size: ~16,000+ images
-   - Classes: COVID-19, Pneumonia, Normal
-   - Format: PNG, DICOM
-
-3. **NIH Chest X-ray Dataset**
-   - Source: NIH Clinical Center
-   - Size: ~100,000+ images
-   - Multiple disease labels
-   - Most comprehensive dataset
-
-## Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| TensorFlow | 2.14.0 | Deep learning framework |
-| Keras | 2.14.0 | Neural network API |
-| NumPy | 1.24.3 | Numerical computing |
-| Pandas | 2.0.3 | Data manipulation |
-| Matplotlib | 3.7.2 | Plotting and visualization |
-| Seaborn | 0.12.2 | Statistical visualization |
-| scikit-learn | 1.3.0 | ML metrics and utilities |
-| OpenCV | 4.8.1.78 | Image processing |
-| Pillow | 10.0.0 | Image handling |
-
-## Performance Benchmarks
-
-Synthetic dataset results (50 samples per class, 5 epochs):
-
-| Metric | Value |
-|--------|-------|
-| Train Accuracy | ~95-98% |
-| Test Accuracy | ~85-92% |
-| Avg Precision | ~0.88 |
-| Avg Recall | ~0.88 |
-
-*Note: Synthetic data results are inflated. Real-world performance lower with actual medical images.*
+MIT License
